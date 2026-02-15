@@ -17,10 +17,16 @@ public class MailController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> SendMail(
-        [FromBody] SendMailRequest request,
-        [FromHeader(Name = "X-User-Email")] string senderEmail)
+        [FromBody] SendMailRequest dto,
+        [FromHeader(Name = "X-User-Id")] string userId,
+        [FromHeader(Name = "X-User-Email")] string userEmail)
     {
-        await _mailService.SendAsync(request, senderEmail);
+        if (string.IsNullOrWhiteSpace(userId) ||
+            string.IsNullOrWhiteSpace(userEmail))
+            return BadRequest("Missing user headers.");
+
+        await _mailService.SendAsync(dto, userId, userEmail);
+
         return Ok();
     }
 }

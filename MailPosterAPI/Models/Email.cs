@@ -2,14 +2,13 @@
 
 public class Email
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
-    public string To { get; set; } = null!;
-    public string Subject { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
+    public string UserId { get; set; } = null!;
+    public string SenderEmail { get; set; } = null!;
+    public string RecipientEmail { get; set; } = null!;
+    public string Subject { get; set; } = null!;
+    public string Body { get; set; } = null!;
 
-    public string SentByUserId { get; set; } = null!;
-    public string? SentByEmail { get; set; }
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime SentAt { get; set; }
 }

@@ -1,6 +1,8 @@
-using Mailposter.Api.Services;
+using MailPosterAPI.Services;
 using MailPosterAPI.Data;
 using Microsoft.EntityFrameworkCore;
+using MailPosterAPI.Configuration;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,14 +10,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Database
-builder.Services.AddDbContext<MailposterDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Services
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IMailService, MailService>();
 
-// CORS (så frontend kan kalde backend)
+builder.Services.Configure<MailtrapOptions>(
+    builder.Configuration.GetSection("Mailtrap")
+);
+
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -26,6 +32,7 @@ builder.Services.AddCors(options =>
             .AllowAnyOrigin();
     });
 });
+
 
 var app = builder.Build();
 
