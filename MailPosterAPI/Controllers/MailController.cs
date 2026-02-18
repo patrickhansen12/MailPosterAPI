@@ -25,7 +25,10 @@ public class MailController : ControllerBase
             string.IsNullOrWhiteSpace(userEmail))
             return BadRequest("Missing user headers.");
 
-        await _mailService.SendAsync(dto, userId, userEmail);
+        var result = await _mailService.SendAsync(dto, userId, userEmail);
+
+        if (!result.Success)
+            return BadRequest(result.ErrorMessage);
 
         return Ok();
     }

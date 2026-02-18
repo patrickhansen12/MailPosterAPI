@@ -1,8 +1,9 @@
 ﻿using MailPosterAPI.DTOs;
+using MailPosterAPI.Services.Results;
 
 namespace MailPosterAPI.Services;
 
 public interface IMailService
 {
-    Task SendAsync(SendMailRequest dto, string userId, string userEmail);
+    Task<MailResult> SendAsync(SendMailRequest dto, string userId, string userEmail);
 }

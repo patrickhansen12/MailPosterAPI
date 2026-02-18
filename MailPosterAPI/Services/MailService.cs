@@ -6,6 +6,8 @@ using MailKit.Security;
 using MailPosterAPI.Data;
 using MailPosterAPI.DTOs;
 using MimeKit;
+using MailPosterAPI.Services.Results;
+using MailPosterAPI.Services.Clients;
 
 
 namespace MailPosterAPI.Services;
@@ -14,68 +16,65 @@ public class MailService : IMailService
 {
     private readonly MailgunOptions _options;
     private readonly ApplicationDbContext _context;
+    private readonly MailgunClient _mailgunClient;
 
 
     public MailService(
         IOptions<MailgunOptions> options,
+        MailgunClient mailgunClient,
         ApplicationDbContext context)
     {
+        _mailgunClient = mailgunClient;
         _options = options.Value;
         _context = context;
     }
 
-    public async Task SendAsync(
+    public async Task<MailResult> SendAsync(
         SendMailRequest dto,
         string userId,
         string userEmail)
     {
-        //exit first, if the email is not azllowed I throw an exception
-        if (dto.To != _options.AllowedRecipient)
+        // Whitelist check
+        if (!string.Equals(dto.To,
+                _options.AllowedRecipient,
+                StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Recipient not allowed.");
+            return MailResult.Fail("Recipient not allowed.");
         }
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(userEmail, userEmail));
-        message.To.Add(MailboxAddress.Parse(dto.To));
-        message.Subject = dto.Subject;
 
-        message.Body = new TextPart("plain")
+        try
         {
-            Text = dto.Body
-        };
+            var response = await _mailgunClient.SendEmailAsync(
+                from: userEmail,
+                to: dto.To,
+                subject: dto.Subject,
+                body: dto.Body);
 
-        using var client = new SmtpClient();
+            if (!response.IsSuccessStatusCode)
+            {
+                return MailResult.Fail("Mail provider error.");
+            }
 
-        await client.ConnectAsync(
-            _options.Host,
-            _options.Port,
-            SecureSocketOptions.StartTls);
+            // Gem i database
+            var email = new Email
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                SenderEmail = userEmail,
+                RecipientEmail = dto.To,
+                Subject = dto.Subject,
+                Body = dto.Body,
+                SentAt = DateTime.UtcNow
+            };
 
-        Console.WriteLine($"HOST: {_options.Host}");
-        Console.WriteLine($"USER: {_options.Username}");
-        Console.WriteLine($"PASS: {_options.Password?.Length}");
-        
-        await client.AuthenticateAsync(
-            _options.Username,
-            _options.Password);
+            _context.Emails.Add(email);
+            await _context.SaveChangesAsync();
 
-        
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
-
-        // 2️⃣ Gem i database
-        var email = new Email
+            return MailResult.Ok();
+        }
+        catch
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            SenderEmail = userEmail,
-            RecipientEmail = dto.To,
-            Subject = dto.Subject,
-            Body = dto.Body,
-            SentAt = DateTime.UtcNow
-        };
-
-        _context.Emails.Add(email);
-        await _context.SaveChangesAsync();
+            return MailResult.Fail("Mail provider error.");
+        }
     }
 }
