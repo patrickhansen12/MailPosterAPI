@@ -17,8 +17,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Services
 builder.Services.AddScoped<IMailService, MailService>();
 
-builder.Services.Configure<MailtrapOptions>(
-    builder.Configuration.GetSection("Mailtrap")
+builder.Services.Configure<MailgunOptions>(
+    builder.Configuration.GetSection("Mailgun")
 );
 
 // CORS

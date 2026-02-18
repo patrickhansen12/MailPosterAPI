@@ -12,12 +12,12 @@ namespace MailPosterAPI.Services;
 
 public class MailService : IMailService
 {
-    private readonly MailtrapOptions _options;
+    private readonly MailgunOptions _options;
     private readonly ApplicationDbContext _context;
 
 
     public MailService(
-        IOptions<MailtrapOptions> options,
+        IOptions<MailgunOptions> options,
         ApplicationDbContext context)
     {
         _options = options.Value;
@@ -29,6 +29,11 @@ public class MailService : IMailService
         string userId,
         string userEmail)
     {
+        //exit first, if the email is not azllowed I throw an exception
+        if (dto.To != _options.AllowedRecipient)
+        {
+            throw new InvalidOperationException("Recipient not allowed.");
+        }
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(userEmail, userEmail));
         message.To.Add(MailboxAddress.Parse(dto.To));
@@ -46,10 +51,15 @@ public class MailService : IMailService
             _options.Port,
             SecureSocketOptions.StartTls);
 
+        Console.WriteLine($"HOST: {_options.Host}");
+        Console.WriteLine($"USER: {_options.Username}");
+        Console.WriteLine($"PASS: {_options.Password?.Length}");
+        
         await client.AuthenticateAsync(
             _options.Username,
             _options.Password);
 
+        
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
 
