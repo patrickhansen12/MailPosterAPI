@@ -32,4 +32,14 @@ public class MailController : ControllerBase
 
         return Ok();
     }
+    [HttpGet]
+    public async Task<IActionResult> GetByUser([FromQuery] string userEmail)
+    {
+        if (string.IsNullOrWhiteSpace(userEmail))
+            return BadRequest("Email is required.");
+
+        var emails = await _mailService.GetByUserAsync(userEmail);
+
+        return Ok(emails);
+    }
 }

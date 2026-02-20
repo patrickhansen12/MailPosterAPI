@@ -8,6 +8,7 @@ using MailPosterAPI.DTOs;
 using MimeKit;
 using MailPosterAPI.Services.Results;
 using MailPosterAPI.Services.Clients;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace MailPosterAPI.Services;
@@ -29,6 +30,9 @@ public class MailService : IMailService
         _context = context;
     }
 
+    // Handles outgoing email via Mailgun REST API.
+    // Recipient validation is enforced via configuration (AllowedRecipient)
+    // to ensure controlled sending in non-production environments.
     public async Task<MailResult> SendAsync(
         SendMailRequest dto,
         string userId,
@@ -54,8 +58,7 @@ public class MailService : IMailService
             {
                 return MailResult.Fail("Mail provider error.");
             }
-
-            // Gem i database
+            
             var email = new Email
             {
                 Id = Guid.NewGuid(),
@@ -76,5 +79,22 @@ public class MailService : IMailService
         {
             return MailResult.Fail("Mail provider error.");
         }
+    }
+    // Retrieves sent emails based on sender email.
+    // Authentication is simplified for demo purposes,
+    // but the structure allows replacing this with proper user identity handling.
+    public async Task<List<Mail>> GetByUserAsync(string userEmail)
+    {
+        return await _context.Emails
+            .Where(e => e.SenderEmail == userEmail)
+            .OrderByDescending(e => e.SentAt)
+            .Select(e => new Mail
+            {
+                RecipientEmail = e.RecipientEmail,
+                Subject = e.Subject,
+                Body = e.Body,
+                SentAt = e.SentAt
+            })
+            .ToListAsync();
     }
 }
