@@ -11,4 +11,5 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Email> Emails => Set<Email>();
+    public DbSet<Draft> Drafts { get; set; }
 }
