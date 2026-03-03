@@ -1,6 +1,6 @@
 📨 Mailgun Email Sender (.NET)
 
-This project demonstrates how I implemented email sending in ASP.NET Core using the Mailgun HTTP API.
+This project demonstrates how I implemented email sending in ASP.NET Core using the Brevo HTTP API.
 
 The purpose of this project was to explore:
 
@@ -34,7 +34,7 @@ Make sure to use the mailposter webapp https://github.com/patrickhansen12/MailPo
 
 
 Things to note:
-You need to insert your own mailgun API integration keys and email or use it together with another 3rd party client.
+You need to insert your own Brevo API integration keys and email or use it together with another 3rd party client.
 it is setup, so it should be extremely simple to implement it into your own workspace, as I havent used dependencies that was locked to mailgun api integration.
 remember to add your own email on 3rd parties whitelist and in the app and not mine, if using the project.
 Lastly many of the mail sites will be auto flagged as spam, so make sure to check your mail box in the spam folder, if it looks like your mail should have been sent.
