@@ -28,11 +28,12 @@ public class DraftController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetByUser(
+    [HttpGet]
+    public async Task<IActionResult> GetDrafts(
         [FromHeader(Name = "X-User-Email")] string userEmail)
     {
         if (string.IsNullOrWhiteSpace(userEmail))
-            return BadRequest("Missing user email header.");
+            return BadRequest("User email is required.");
 
         var drafts = await _draftService.GetByUserAsync(userEmail);
         return Ok(drafts);

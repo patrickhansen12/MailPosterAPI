@@ -15,13 +15,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")));
 
+    
+builder.Services.Configure<BrevoOptions>(
+    builder.Configuration.GetSection(BrevoOptions.SectionName));
+
+builder.Services.AddHttpClient<BrevoClient>();
+
 // Services
-builder.Services.Configure<MailgunOptions>(
-    builder.Configuration.GetSection("Mailgun"));
-
-builder.Services.AddHttpClient<MailgunClient>();
-
 builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<IDraftService, DraftService>();
 
 // CORS
 builder.Services.AddCors(options =>

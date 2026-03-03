@@ -1,69 +1,66 @@
 ﻿using MailPosterAPI.Configuration;
 using MailPosterAPI.Models;
 using Microsoft.Extensions.Options;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using MailPosterAPI.Data;
 using MailPosterAPI.DTOs;
-using MimeKit;
 using MailPosterAPI.Services.Results;
 using MailPosterAPI.Services.Clients;
 using Microsoft.EntityFrameworkCore;
-
 
 namespace MailPosterAPI.Services;
 
 public class MailService : IMailService
 {
-    private readonly MailgunOptions _options;
+    private readonly BrevoOptions _options;
     private readonly ApplicationDbContext _context;
-    private readonly MailgunClient _mailgunClient;
-
+    private readonly BrevoClient _brevoClient;
 
     public MailService(
-        IOptions<MailgunOptions> options,
-        MailgunClient mailgunClient,
+        IOptions<BrevoOptions> options,
+        BrevoClient brevoClient,
         ApplicationDbContext context)
     {
-        _mailgunClient = mailgunClient;
+        _brevoClient = brevoClient;
         _options = options.Value;
         _context = context;
     }
 
-    // Handles outgoing email via Mailgun REST API.
-    // Recipient validation is enforced via configuration (AllowedRecipient)
-    // to ensure controlled sending in non-production environments.
     public async Task<MailResult> SendAsync(
         SendMailRequest dto,
         string userId,
         string userEmail)
     {
-        // Whitelist check
-        if (!string.Equals(dto.To,
-                _options.AllowedRecipient,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return MailResult.Fail("Recipient not allowed.");
-        }
+        // whitelist check - turned off for better demoes
+        // if (!string.Equals(dto.To,
+        //         _options.AllowedRecipient,
+        //         StringComparison.OrdinalIgnoreCase))
+        // {
+        //     return MailResult.Fail("Demo mode: Only white listed emails can be used");
+        // }
 
         try
         {
-            var response = await _mailgunClient.SendEmailAsync(
-                from: userEmail,
-                to: dto.To,
+            // Sends using a whitelisted system email on brevo
+            var response = await _brevoClient.SendEmailAsync(
+                fromEmail: _options.SystemEmail,      // ingen-reply@outlook.dk
+                fromName: _options.SystemName,       
+                toEmail: dto.To,
+                toName: "Modtager",
                 subject: dto.Subject,
                 body: dto.Body);
 
             if (!response.IsSuccessStatusCode)
             {
-                return MailResult.Fail("Mail provider error.");
+                var error = await response.Content.ReadAsStringAsync();
+                return MailResult.Fail($"Mail provider error: {error}");
             }
             
+            // Saves the email in database
             var email = new Email
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                SenderEmail = userEmail,
+                SenderEmail = userEmail,  
                 RecipientEmail = dto.To,
                 Subject = dto.Subject,
                 Body = dto.Body,
@@ -75,18 +72,16 @@ public class MailService : IMailService
 
             return MailResult.Ok();
         }
-        catch
+        catch (Exception ex)
         {
-            return MailResult.Fail("Mail provider error.");
+            return MailResult.Fail($"Mail provider error: {ex.Message}");
         }
     }
-    // Retrieves sent emails based on sender email.
-    // Authentication is simplified for demo purposes,
-    // but the structure allows replacing this with proper user identity handling.
+
     public async Task<List<Mail>> GetByUserAsync(string userEmail)
     {
         return await _context.Emails
-            .Where(e => e.SenderEmail == userEmail)
+            .Where(e => e.SenderEmail == userEmail)  // Finds all the emails sent by the user.
             .OrderByDescending(e => e.SentAt)
             .Select(e => new Mail
             {
