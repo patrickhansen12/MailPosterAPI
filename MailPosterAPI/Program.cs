@@ -9,16 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Controllers
 builder.Services.AddControllers();
 
-// Database - PostgreSQL to Render
+// Database - PostgreSQL til Render
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
                        ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-// MIDLERTIDIG LOG - for at se præcis hvad der kommer ind
-Console.WriteLine($"Raw DATABASE_URL exists: {!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DATABASE_URL"))}");
-Console.WriteLine($"Connection string starts with: {connectionString?.Substring(0, Math.Min(30, connectionString?.Length ?? 0))}");
-
-// Konverter Render's PostgreSQL URL til EF Core format
-if (connectionString != null && connectionString.StartsWith("postgres://"))
+// Converter Render's PostgreSQL URL til EF Core format
+if (connectionString != null && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
 {
     try 
     {
@@ -27,16 +23,13 @@ if (connectionString != null && connectionString.StartsWith("postgres://"))
         
         connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};" +
                            $"Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-        
-        Console.WriteLine("Successfully converted PostgreSQL URL");
     }
     catch (Exception ex)
     {
         Console.WriteLine($"ERROR parsing PostgreSQL URL: {ex.Message}");
-        // Fallback til direkte brug af URL'en
-        connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
     }
 }
+
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
