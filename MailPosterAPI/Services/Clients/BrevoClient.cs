@@ -1,5 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
+using MailPosterAPI.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace MailPosterAPI.Services.Clients;
 
@@ -8,17 +10,15 @@ public class BrevoClient
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _config;
 
-    public BrevoClient(HttpClient httpClient, IConfiguration config)
+    public BrevoClient(HttpClient httpClient, IOptions<BrevoOptions> options)
     {
         _httpClient = httpClient;
-        _config = config;
-        
-        var apiKey = _config["Brevo:ApiKey"];
-        _httpClient.BaseAddress = new Uri(_config["Brevo:BaseUrl"] ?? "https://api.brevo.com/v3/");
-        _httpClient.DefaultRequestHeaders.Add("api-key", apiKey);
+        var brevoOptions = options.Value;
+    
+        _httpClient.BaseAddress = new Uri(brevoOptions.BaseUrl);
+        _httpClient.DefaultRequestHeaders.Add("api-key", brevoOptions.ApiKey);
         _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
     }
-
     public async Task<HttpResponseMessage> SendEmailAsync(
         string fromEmail,
         string fromName,
