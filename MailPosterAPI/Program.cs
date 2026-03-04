@@ -42,9 +42,14 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors("AllowFrontend");
-
 app.UseAuthorization();
-
 app.MapControllers();
+
+// Health check endpoint (Used to ensure render awakes faster)
+app.MapGet("/health", () => Results.Ok(new { 
+    status = "healthy", 
+    timestamp = DateTime.UtcNow,
+    environment = builder.Environment.EnvironmentName
+}));
 
 app.Run();
